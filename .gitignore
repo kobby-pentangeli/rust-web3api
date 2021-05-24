@@ -3,5 +3,6 @@ build
 yarn-error.log
 coverage
 .vscode
+/.idea
 *.log
 w3
