@@ -168,7 +168,7 @@ impl DataView {
         Ok(result)
     }
 
-    pub fn set_f32(&mut self, value: f32) -> Result<()> {
+    pub fn set_f32(&mut self, _value: f32) -> Result<()> {
         if self.byte_offset + 4 > self.byte_length {
             eprint!("{}", E_INDEX_OUT_OF_RANGE);
             return Err(Error::new(ErrorKind::Interrupted, E_INDEX_OUT_OF_RANGE));

@@ -3,7 +3,6 @@ pub struct Format;
 
 impl Format {
     pub const ERROR: u8 = 0;
-    pub const FOUR_BYTES: u8 = 0xffffffff;
     pub const FOUR_LEAST_SIG_BITS_IN_BYTE: u8 = 0x0f;
     pub const FOUR_SIG_BITS_IN_BYTE: u8 = 0xf0;
     pub const POSITIVE_FIXINT: u8 = 0x00;

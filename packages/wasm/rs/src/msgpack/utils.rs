@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub struct Block {
     /// Memory manager info
     mm_info: u32,

@@ -1,4 +1,4 @@
-use crate::{Nullable, Result, Write};
+use crate::{Result, Write};
 use num_bigint::BigInt;
 use std::collections::HashMap;
 
@@ -7,6 +7,7 @@ struct WriteSizer {
 }
 
 impl WriteSizer {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self { length: 0 }
     }
@@ -135,14 +136,11 @@ impl Write for WriteSizer {
         }
     }
 
-    fn write_array<T, F>(&mut self, a: &[T], func: F)
+    fn write_array<T, F>(&mut self, _a: &[T], _func: F)
     where
         F: FnMut(u32),
     {
-        self.write_array_length(a.len() as u32);
-        for i in 0..a.len() {
-            func(i as u32);
-        }
+        todo!()
     }
 
     fn write_map_length(&mut self, length: u32) {
@@ -155,114 +153,110 @@ impl Write for WriteSizer {
         }
     }
 
-    fn write_map<F, K, V, W>(&mut self, map: HashMap<K, V>, key_fn: F, value_fn: W)
+    fn write_map<F, K, V, W>(&mut self, _map: HashMap<K, V>, _key_fn: F,_value_fn: W)
     where
         F: FnMut(&K),
         W: FnMut(&V),
     {
-        self.write_map_length(map.len() as u32);
-        for (key, value) in map {
-            key_fn(&key);
-            value_fn(&value);
-        }
+        todo!()
     }
 
-    fn write_nullable_bool(&mut self, value: Nullable<bool>) -> Result {
-        if value.is_null() {
+    fn write_nullable_bool(&mut self, value: Option<bool>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_bool(*value.get_value());
+        self.write_bool(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_i8(&mut self, value: Nullable<i8>) -> Result {
-        if value.is_null() {
+    fn write_nullable_i8(&mut self, value: Option<i8>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_i8(*value.get_value());
+        self.write_i8(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_i16(&mut self, value: Nullable<i16>) -> Result {
-        if value.is_null() {
+    fn write_nullable_i16(&mut self, value: Option<i16>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_i16(*value.get_value());
+        self.write_i16(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_i32(&mut self, value: Nullable<i32>) -> Result {
-        if value.is_null() {
+    fn write_nullable_i32(&mut self, value: Option<i32>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_i32(*value.get_value());
+        self.write_i32(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_i64(&mut self, value: Nullable<i64>) -> Result {
-        if value.is_null() {
+    fn write_nullable_i64(&mut self, value: Option<i64>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_i64(*value.get_value());
+        self.write_i64(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_u8(&mut self, value: Nullable<u8>) -> Result {
-        if value.is_null() {
+    fn write_nullable_u8(&mut self, value: Option<u8>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_u8(*value.get_value());
+        self.write_u8(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_u16(&mut self, value: Nullable<u16>) -> Result {
-        if value.is_null() {
+    fn write_nullable_u16(&mut self, value: Option<u16>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_u16(*value.get_value());
+        self.write_u16(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_u32(&mut self, value: Nullable<u32>) -> Result {
-        if value.is_null() {
+    fn write_nullable_u32(&mut self, value: Option<u32>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_u32(*value.get_value());
+        self.write_u32(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_u64(&mut self, value: Nullable<u64>) -> Result {
-        if value.is_null() {
+    fn write_nullable_u64(&mut self, value: Option<u64>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_u64(*value.get_value());
+        self.write_u64(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_f32(&mut self, value: Nullable<f32>) -> Result {
-        if value.is_null() {
+    fn write_nullable_f32(&mut self, value: Option<f32>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_f32(*value.get_value());
+        self.write_f32(value.unwrap());
         Ok(())
     }
 
-    fn write_nullable_f64(&mut self, value: Nullable<f64>) -> Result {
-        if value.is_null() {
+    fn write_nullable_f64(&mut self, value: Option<f64>) -> Result {
+        if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_f64(*value.get_value());
+        self.write_f64(value.unwrap());
         Ok(())
     }
 
@@ -280,7 +274,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_bytes(&value.unwrap());
+        let _ = self.write_bytes(&value.unwrap());
         Ok(())
     }
 
@@ -293,35 +287,23 @@ impl Write for WriteSizer {
         Ok(())
     }
 
-    fn write_nullable_array<T, F>(&mut self, a: Option<Vec<T>>, func: F) -> Result
+    fn write_nullable_array<T, F>(&mut self, _a: Option<Vec<T>>, _func: F) -> Result
     where
         F: FnMut(T),
     {
-        if a.is_none() {
-            self.write_nil();
-            return Ok(());
-        }
-        self.write_array(&a.unwrap(), func());
-        Ok(())
+        todo!()
     }
 
     fn write_nullable_map<F, K, V, W>(
         &mut self,
-        map: Option<HashMap<K, V>>,
-        key_fn: F,
-        value_fn: W,
+        _map: Option<HashMap<K, V>>,
+        _key_fn: F,
+        _value_fn: W,
     ) -> Result
     where
         F: FnMut(&K),
         W: FnMut(&V),
     {
-        if map.is_none() {
-            self.write_nil();
-            return Ok(());
-        }
-        for (key, value) in map.unwrap() {
-            self.write_map(map.unwrap(), key_fn(&key), value_fn(&value))
-        }
-        Ok(())
+        todo!()
     }
 }

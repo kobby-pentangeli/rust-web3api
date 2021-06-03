@@ -1,6 +1,5 @@
 pub mod data_view;
 pub mod format;
-pub mod nullable;
 pub mod read;
 pub mod read_decoder;
 pub mod utils;
