@@ -1,24 +1,34 @@
+use super::context::Context;
 use super::data_view::DataView;
 use super::format::Format;
 use super::read::Read;
-use super::E_INVALID_LENGTH;
 use num_bigint::BigInt;
 
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::str::FromStr;
 
+#[derive(Clone, Debug)]
 struct ReadDecoder {
+    context: Context,
     view: DataView,
 }
 
 impl ReadDecoder {
     #[allow(dead_code)]
-    pub fn new(buffer: &[u8]) -> Self {
+    pub fn new(buf: &[u8]) -> Self {
         Self {
-            view: DataView::new(buffer).unwrap(),
+            context: Context::new(),
+            view: DataView::new(buf).unwrap(),
         }
     }
+
+    /*
+    #[allow(dead_code)]
+    pub fn get_context(&self) -> &Context {
+        &self.context
+    }
+    */
 
     pub fn is_next_nil(&mut self) -> bool {
         let format = self.view.peek_u8().unwrap();
@@ -161,18 +171,132 @@ impl ReadDecoder {
 
         Ok(objects_to_discard)
     }
+
+    fn get_error_message(lead_byte: u8) -> Result<String> {
+        if Format::is_negative_fixed_int(lead_byte) {
+            return Ok("Found `int`".to_string());
+        } else if Format::is_fixed_int(lead_byte) {
+            return Ok("Found `int`".to_string());
+        } else if Format::is_fixed_string(lead_byte) {
+            return Ok("Found `string`".to_string());
+        } else if Format::is_fixed_array(lead_byte) {
+            return Ok("Found `array`".to_string());
+        } else if Format::is_fixed_map(lead_byte) {
+            return Ok("Found `map`".to_string());
+        } else {
+            match lead_byte {
+                Format::NIL => {
+                    return Ok("Found `nil`".to_string());
+                }
+                Format::TRUE => {
+                    return Ok("Found `bool`".to_string());
+                }
+                Format::FALSE => {
+                    return Ok("Found `bool`".to_string());
+                }
+                Format::BIN8 => {
+                    return Ok("Found `BIN8`".to_string());
+                }
+                Format::BIN16 => {
+                    return Ok("Found `BIN16`".to_string());
+                }
+                Format::BIN32 => {
+                    return Ok("Found `BIN32`".to_string());
+                }
+                Format::FLOAT32 => {
+                    return Ok("Found `float32`".to_string());
+                }
+                Format::FLOAT64 => {
+                    return Ok("Found `float64`".to_string());
+                }
+                Format::UINT8 => {
+                    return Ok("Found `uint8`".to_string());
+                }
+                Format::UINT16 => {
+                    return Ok("Found `uint16`".to_string());
+                }
+                Format::UINT32 => {
+                    return Ok("Found `uint32`".to_string());
+                }
+                Format::UINT64 => {
+                    return Ok("Found `uint64`".to_string());
+                }
+                Format::INT8 => {
+                    return Ok("Found `int8`".to_string());
+                }
+                Format::INT16 => {
+                    return Ok("Found `int16`".to_string());
+                }
+                Format::INT32 => {
+                    return Ok("Found `int32`".to_string());
+                }
+                Format::INT64 => {
+                    return Ok("Found `int64`".to_string());
+                }
+                Format::FIXEXT1 => {
+                    return Ok("Found `FIXEXT1`".to_string());
+                }
+                Format::FIXEXT2 => {
+                    return Ok("Found `FIXEXT2`".to_string());
+                }
+                Format::FIXEXT4 => {
+                    return Ok("Found `FIXEXT4`".to_string());
+                }
+                Format::FIXEXT8 => {
+                    return Ok("Found `FIXEXT8`".to_string());
+                }
+                Format::FIXEXT16 => {
+                    return Ok("Found `FIXEXT16`".to_string());
+                }
+                Format::STR8 => {
+                    return Ok("Found `string`".to_string());
+                }
+                Format::STR16 => {
+                    return Ok("Found `string`".to_string());
+                }
+                Format::STR32 => {
+                    return Ok("Found `string`".to_string());
+                }
+                Format::ARRAY16 => {
+                    return Ok("Found `array`".to_string());
+                }
+                Format::ARRAY32 => {
+                    return Ok("Found `array`".to_string());
+                }
+                Format::MAP16 => {
+                    return Ok("Found `map`".to_string());
+                }
+                Format::MAP32 => {
+                    return Ok("Found `map`".to_string());
+                }
+                _ => {
+                    let custom_error = format!(
+                        "ivalid prefix, bad encoding for val: {}",
+                        lead_byte.to_string()
+                    );
+                    return Err(Error::new(ErrorKind::Other, custom_error));
+                }
+            }
+        }
+    }
 }
 
 impl Read for ReadDecoder {
     fn read_bool(&mut self) -> Result<bool> {
-        if let Ok(value) = self.view.get_u8() {
-            if value == Format::TRUE {
-                return Ok(true);
-            } else if value == Format::FALSE {
-                return Ok(false);
-            }
+        let value = self.view.get_u8().unwrap();
+        if value == Format::TRUE {
+            return Ok(true);
+        } else if value == Format::FALSE {
+            return Ok(false);
         }
-        Err(Error::new(ErrorKind::Other, "bad value for bool"))
+        let mut custom_error = String::new();
+        custom_error.push_str("Property must be of type `bool`");
+        let msg = Self::get_error_message(value).unwrap();
+        custom_error.push_str(&msg);
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_i8(&mut self) -> Result<i8> {
@@ -181,7 +305,10 @@ impl Read for ReadDecoder {
             return Ok(value as i8);
         }
         let custom_error = format!("integer overflow: value = {}; bits = 8", value.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_i16(&mut self) -> Result<i16> {
@@ -190,7 +317,10 @@ impl Read for ReadDecoder {
             return Ok(value as i16);
         }
         let custom_error = format!("integer overflow: value = {}; bits = 16", value.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_i32(&mut self) -> Result<i32> {
@@ -199,7 +329,10 @@ impl Read for ReadDecoder {
             return Ok(value as i32);
         }
         let custom_error = format!("integer overflow: value = {}; bits = 32", value.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_i64(&mut self) -> Result<i64> {
@@ -216,8 +349,13 @@ impl Read for ReadDecoder {
             Format::INT32 => Ok(self.view.get_i32()? as i64),
             Format::INT64 => Ok(self.view.get_i64()?),
             _ => {
-                let custom_error = format!("bad prefix for int: {}", prefix.to_string());
-                Err(Error::new(ErrorKind::Other, custom_error))
+                let mut custom_error = String::from("Property must be of type `int`");
+                let msg = Self::get_error_message(prefix).unwrap();
+                custom_error.push_str(&msg);
+                Err(Error::new(
+                    ErrorKind::Other,
+                    self.context.print_with_context(&custom_error),
+                ))
             }
         }
     }
@@ -231,7 +369,10 @@ impl Read for ReadDecoder {
             "unsigned integer overflow: value = {}; bits = 8",
             value.to_string()
         );
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_u16(&mut self) -> Result<u16> {
@@ -243,7 +384,10 @@ impl Read for ReadDecoder {
             "unsigned integer overflow: value = {}; bits = 16",
             value.to_string()
         );
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_u32(&mut self) -> Result<u32> {
@@ -255,7 +399,10 @@ impl Read for ReadDecoder {
             "unsigned integer overflow: value = {}; bits = 32",
             value.to_string()
         );
-        Err(Error::new(ErrorKind::Other, custom_error))
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_u64(&mut self) -> Result<u64> {
@@ -275,8 +422,13 @@ impl Read for ReadDecoder {
             Format::UINT32 => Ok(self.view.get_u32()? as u64),
             Format::UINT64 => Ok(self.view.get_u64()?),
             _ => {
-                let custom_error = format!("bad prefix for unsigned int: {}", prefix.to_string());
-                Err(Error::new(ErrorKind::Other, custom_error))
+                let mut custom_error = String::from("Property must be of type `uint`");
+                let msg = Self::get_error_message(prefix).unwrap();
+                custom_error.push_str(&msg);
+                Err(Error::new(
+                    ErrorKind::Other,
+                    self.context.print_with_context(&custom_error),
+                ))
             }
         }
     }
@@ -286,8 +438,13 @@ impl Read for ReadDecoder {
         if Format::is_float_32(prefix) {
             return Ok(self.view.get_f32()?);
         }
-        let custom_error = format!("bad prefix for float 32: {}", prefix.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        let mut custom_error = String::from("Property must be of type `float32`");
+        let msg = Self::get_error_message(prefix).unwrap();
+        custom_error.push_str(&msg);
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_f64(&mut self) -> Result<f64> {
@@ -295,8 +452,13 @@ impl Read for ReadDecoder {
         if Format::is_float_64(prefix) {
             return Ok(self.view.get_f64()?);
         }
-        let custom_error = format!("bad prefix for float 64: {}", prefix.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        let mut custom_error = String::from("Property must be of type `float64`");
+        let msg = Self::get_error_message(prefix).unwrap();
+        custom_error.push_str(&msg);
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_string_length(&mut self) -> Result<u32> {
@@ -312,8 +474,13 @@ impl Read for ReadDecoder {
             Format::STR16 => Ok(self.view.get_u16()? as u32),
             Format::STR32 => Ok(self.view.get_u32()?),
             _ => {
-                let custom_error = format!("{} {}", E_INVALID_LENGTH, lead_byte.to_string());
-                Err(Error::new(ErrorKind::Other, custom_error))
+                let mut custom_error = String::from("Property must be of type `string`");
+                let msg = Self::get_error_message(lead_byte).unwrap();
+                custom_error.push_str(&msg);
+                Err(Error::new(
+                    ErrorKind::Other,
+                    self.context.print_with_context(&custom_error),
+                ))
             }
         }
     }
@@ -340,8 +507,13 @@ impl Read for ReadDecoder {
             Format::STR16 => Ok(self.view.get_u16()? as u32),
             Format::STR32 => Ok(self.view.get_u32()?),
             _ => {
-                let custom_error = format!("{} {}", E_INVALID_LENGTH, lead_byte.to_string());
-                Err(Error::new(ErrorKind::Other, custom_error))
+                let mut custom_error = String::from("Property must be of type `bytes`");
+                let msg = Self::get_error_message(lead_byte).unwrap();
+                custom_error.push_str(&msg);
+                Err(Error::new(
+                    ErrorKind::Other,
+                    self.context.print_with_context(&custom_error),
+                ))
             }
         }
     }
@@ -368,8 +540,13 @@ impl Read for ReadDecoder {
         } else if lead_byte == Format::NIL {
             return Ok(0);
         }
-        let custom_error = format!("{} {}", E_INVALID_LENGTH, lead_byte.to_string());
-        Err(Error::new(ErrorKind::Other, custom_error))
+        let mut custom_error = String::from("Property must be of type `array`");
+        let msg = Self::get_error_message(lead_byte).unwrap();
+        custom_error.push_str(&msg);
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
     fn read_array<T, F>(&mut self, _func: F) -> Result<Vec<T>>
@@ -388,11 +565,16 @@ impl Read for ReadDecoder {
         } else if lead_byte == Format::MAP32 {
             return Ok(self.view.get_u32()?);
         }
-        let custom_error = format!("{}", E_INVALID_LENGTH);
-        Err(Error::new(ErrorKind::Other, custom_error))
+        let mut custom_error = String::from("Property must be of type `map`");
+        let msg = Self::get_error_message(lead_byte).unwrap();
+        custom_error.push_str(&msg);
+        Err(Error::new(
+            ErrorKind::Other,
+            self.context.print_with_context(&custom_error),
+        ))
     }
 
-    fn read_map<F, K, V, W>(&mut self, _key_fn: F,_value_fnn: W) -> HashMap<K, V>
+    fn read_map<F, K, V, W>(&mut self, _key_fn: F, _value_fnn: W) -> HashMap<K, V>
     where
         F: FnMut(&K),
         W: FnMut(&V),
@@ -505,7 +687,7 @@ impl Read for ReadDecoder {
         todo!()
     }
 
-    fn read_nullable_map<F, K, V, W>(&mut self, _key_fn: F,_value_fnn: W) -> Option<HashMap<K, V>>
+    fn read_nullable_map<F, K, V, W>(&mut self, _key_fn: F, _value_fnn: W) -> Option<HashMap<K, V>>
     where
         F: FnMut(&K),
         W: FnMut(&V),

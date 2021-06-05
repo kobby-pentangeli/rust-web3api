@@ -153,7 +153,7 @@ impl Write for WriteSizer {
         }
     }
 
-    fn write_map<F, K, V, W>(&mut self, _map: HashMap<K, V>, _key_fn: F,_value_fn: W)
+    fn write_map<F, K, V, W>(&mut self, _map: HashMap<K, V>, _key_fn: F, _value_fn: W)
     where
         F: FnMut(&K),
         W: FnMut(&V),

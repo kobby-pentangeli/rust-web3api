@@ -1,3 +1,4 @@
+pub mod context;
 pub mod data_view;
 pub mod format;
 pub mod read;
