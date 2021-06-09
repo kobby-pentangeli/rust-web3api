@@ -55,7 +55,7 @@ impl Format {
     }
 
     pub fn is_negative_fixed_int(u: u8) -> bool {
-        (u & 0xe0) == Self::NEGATIVE_FIXINT // REALLY?
+        (u & 0xe0) == Self::NEGATIVE_FIXINT
     }
 
     pub fn is_fixed_map(u: u8) -> bool {

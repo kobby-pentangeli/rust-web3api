@@ -9,7 +9,7 @@ use std::io::{Error, ErrorKind, Result};
 use std::str::FromStr;
 
 #[derive(Clone, Debug)]
-struct ReadDecoder {
+pub struct ReadDecoder {
     context: Context,
     view: DataView,
 }
@@ -23,15 +23,13 @@ impl ReadDecoder {
         }
     }
 
-    /*
     #[allow(dead_code)]
     pub fn get_context(&self) -> &Context {
         &self.context
     }
-    */
 
     pub fn is_next_nil(&mut self) -> bool {
-        let format = self.view.peek_u8().unwrap();
+        let format = self.view.peek_u8().unwrap_or_default();
         if format == Format::NIL {
             let _ = self.view.discard(1);
             return true;
@@ -41,7 +39,7 @@ impl ReadDecoder {
 
     #[allow(dead_code)]
     pub fn is_next_string(&mut self) -> bool {
-        let format = self.view.peek_u8().unwrap();
+        let format = self.view.peek_u8().unwrap_or_default();
         return Format::is_fixed_string(format)
             || format == Format::STR8
             || format == Format::STR16
@@ -51,7 +49,7 @@ impl ReadDecoder {
     #[allow(dead_code)]
     fn skip(&mut self) {
         // get_size handles discarding `msgpack header` info
-        let mut num_of_objects_to_discard = self.get_size().unwrap();
+        let mut num_of_objects_to_discard = self.get_size().unwrap_or_default();
         while num_of_objects_to_discard > 0 {
             let _ = self.get_size().unwrap(); // discard next object
             num_of_objects_to_discard -= 1;
@@ -283,7 +281,7 @@ impl ReadDecoder {
 
 impl Read for ReadDecoder {
     fn read_bool(&mut self) -> Result<bool> {
-        let value = self.view.get_u8().unwrap();
+        let value = self.view.get_u8().unwrap_or_default();
         if value == Format::TRUE {
             return Ok(true);
         } else if value == Format::FALSE {
@@ -291,7 +289,7 @@ impl Read for ReadDecoder {
         }
         let mut custom_error = String::new();
         custom_error.push_str("Property must be of type `bool`");
-        let msg = Self::get_error_message(value).unwrap();
+        let msg = Self::get_error_message(value).unwrap_or_default();
         custom_error.push_str(&msg);
         Err(Error::new(
             ErrorKind::Other,
@@ -350,7 +348,7 @@ impl Read for ReadDecoder {
             Format::INT64 => Ok(self.view.get_i64()?),
             _ => {
                 let mut custom_error = String::from("Property must be of type `int`");
-                let msg = Self::get_error_message(prefix).unwrap();
+                let msg = Self::get_error_message(prefix).unwrap_or_default();
                 custom_error.push_str(&msg);
                 Err(Error::new(
                     ErrorKind::Other,
@@ -423,7 +421,7 @@ impl Read for ReadDecoder {
             Format::UINT64 => Ok(self.view.get_u64()?),
             _ => {
                 let mut custom_error = String::from("Property must be of type `uint`");
-                let msg = Self::get_error_message(prefix).unwrap();
+                let msg = Self::get_error_message(prefix).unwrap_or_default();
                 custom_error.push_str(&msg);
                 Err(Error::new(
                     ErrorKind::Other,
@@ -439,7 +437,7 @@ impl Read for ReadDecoder {
             return Ok(self.view.get_f32()?);
         }
         let mut custom_error = String::from("Property must be of type `float32`");
-        let msg = Self::get_error_message(prefix).unwrap();
+        let msg = Self::get_error_message(prefix).unwrap_or_default();
         custom_error.push_str(&msg);
         Err(Error::new(
             ErrorKind::Other,
@@ -453,7 +451,7 @@ impl Read for ReadDecoder {
             return Ok(self.view.get_f64()?);
         }
         let mut custom_error = String::from("Property must be of type `float64`");
-        let msg = Self::get_error_message(prefix).unwrap();
+        let msg = Self::get_error_message(prefix).unwrap_or_default();
         custom_error.push_str(&msg);
         Err(Error::new(
             ErrorKind::Other,
@@ -475,7 +473,7 @@ impl Read for ReadDecoder {
             Format::STR32 => Ok(self.view.get_u32()?),
             _ => {
                 let mut custom_error = String::from("Property must be of type `string`");
-                let msg = Self::get_error_message(lead_byte).unwrap();
+                let msg = Self::get_error_message(lead_byte).unwrap_or_default();
                 custom_error.push_str(&msg);
                 Err(Error::new(
                     ErrorKind::Other,
@@ -488,7 +486,7 @@ impl Read for ReadDecoder {
     fn read_string(&mut self) -> Result<String> {
         let str_len = self.read_string_length()?;
         let str_bytes = self.view.get_bytes(str_len as i32)?;
-        Ok(String::from_utf8(str_bytes).unwrap())
+        Ok(String::from_utf8(str_bytes).unwrap_or_default())
     }
 
     fn read_bytes_length(&mut self) -> Result<u32> {
@@ -508,7 +506,7 @@ impl Read for ReadDecoder {
             Format::STR32 => Ok(self.view.get_u32()?),
             _ => {
                 let mut custom_error = String::from("Property must be of type `bytes`");
-                let msg = Self::get_error_message(lead_byte).unwrap();
+                let msg = Self::get_error_message(lead_byte).unwrap_or_default();
                 custom_error.push_str(&msg);
                 Err(Error::new(
                     ErrorKind::Other,
@@ -525,7 +523,7 @@ impl Read for ReadDecoder {
 
     fn read_bigint(&mut self) -> Result<BigInt> {
         let s = self.read_string()?;
-        Ok(BigInt::from_str(&s).unwrap())
+        Ok(BigInt::from_str(&s).unwrap_or_default())
     }
 
     fn read_array_length(&mut self) -> Result<u32> {
@@ -541,7 +539,7 @@ impl Read for ReadDecoder {
             return Ok(0);
         }
         let mut custom_error = String::from("Property must be of type `array`");
-        let msg = Self::get_error_message(lead_byte).unwrap();
+        let msg = Self::get_error_message(lead_byte).unwrap_or_default();
         custom_error.push_str(&msg);
         Err(Error::new(
             ErrorKind::Other,
@@ -566,7 +564,7 @@ impl Read for ReadDecoder {
             return Ok(self.view.get_u32()?);
         }
         let mut custom_error = String::from("Property must be of type `map`");
-        let msg = Self::get_error_message(lead_byte).unwrap();
+        let msg = Self::get_error_message(lead_byte).unwrap_or_default();
         custom_error.push_str(&msg);
         Err(Error::new(
             ErrorKind::Other,
@@ -586,98 +584,98 @@ impl Read for ReadDecoder {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_bool().unwrap())
+        Some(self.read_bool().unwrap_or_default())
     }
 
     fn read_nullable_i8(&mut self) -> Option<i8> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_i8().unwrap())
+        Some(self.read_i8().unwrap_or_default())
     }
 
     fn read_nullable_i16(&mut self) -> Option<i16> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_i16().unwrap())
+        Some(self.read_i16().unwrap_or_default())
     }
 
     fn read_nullable_i32(&mut self) -> Option<i32> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_i32().unwrap())
+        Some(self.read_i32().unwrap_or_default())
     }
 
     fn read_nullable_i64(&mut self) -> Option<i64> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_i64().unwrap())
+        Some(self.read_i64().unwrap_or_default())
     }
 
     fn read_nullable_u8(&mut self) -> Option<u8> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_u8().unwrap())
+        Some(self.read_u8().unwrap_or_default())
     }
 
     fn read_nullable_u16(&mut self) -> Option<u16> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_u16().unwrap())
+        Some(self.read_u16().unwrap_or_default())
     }
 
     fn read_nullable_u32(&mut self) -> Option<u32> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_u32().unwrap())
+        Some(self.read_u32().unwrap_or_default())
     }
 
     fn read_nullable_u64(&mut self) -> Option<u64> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_u64().unwrap())
+        Some(self.read_u64().unwrap_or_default())
     }
 
     fn read_nullable_f32(&mut self) -> Option<f32> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_f32().unwrap())
+        Some(self.read_f32().unwrap_or_default())
     }
 
     fn read_nullable_f64(&mut self) -> Option<f64> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_f64().unwrap())
+        Some(self.read_f64().unwrap_or_default())
     }
 
     fn read_nullable_string(&mut self) -> Option<String> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_string().unwrap())
+        Some(self.read_string().unwrap_or_default())
     }
 
     fn read_nullable_bytes(&mut self) -> Option<Vec<u8>> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_bytes().unwrap())
+        Some(self.read_bytes().unwrap_or_default())
     }
 
     fn read_nullable_bigint(&mut self) -> Option<BigInt> {
         if self.is_next_nil() {
             return None;
         }
-        Some(self.read_bigint().unwrap())
+        Some(self.read_bigint().unwrap_or_default())
     }
 
     fn read_nullable_array<T, F>(&mut self, _func: F) -> Option<Vec<T>>

@@ -2,7 +2,8 @@ use crate::{Result, Write};
 use num_bigint::BigInt;
 use std::collections::HashMap;
 
-struct WriteSizer {
+#[derive(Debug, Clone, Default)]
+pub struct WriteSizer {
     length: i32,
 }
 
@@ -94,11 +95,9 @@ impl Write for WriteSizer {
         }
     }
 
-    fn write_string(&mut self, value: &str) {
-        use std::str::FromStr;
-        let buf = String::from_str(value).unwrap();
-        self.write_string_length(buf.len() as u32);
-        self.length += buf.len() as i32;
+    fn write_string(&mut self, value: String) {
+        self.write_string_length(value.len() as u32);
+        self.length += value.len() as i32;
     }
 
     fn write_bytes_length(&mut self, length: u32) {
@@ -123,7 +122,7 @@ impl Write for WriteSizer {
 
     fn write_bigint(&mut self, value: BigInt) {
         let val_str = value.to_string();
-        self.write_string(&val_str);
+        self.write_string(val_str);
     }
 
     fn write_array_length(&mut self, length: u32) {
@@ -166,7 +165,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_bool(value.unwrap());
+        self.write_bool(value.unwrap_or_default());
         Ok(())
     }
 
@@ -175,7 +174,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_i8(value.unwrap());
+        self.write_i8(value.unwrap_or_default());
         Ok(())
     }
 
@@ -184,7 +183,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_i16(value.unwrap());
+        self.write_i16(value.unwrap_or_default());
         Ok(())
     }
 
@@ -193,7 +192,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_i32(value.unwrap());
+        self.write_i32(value.unwrap_or_default());
         Ok(())
     }
 
@@ -202,7 +201,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_i64(value.unwrap());
+        self.write_i64(value.unwrap_or_default());
         Ok(())
     }
 
@@ -211,7 +210,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_u8(value.unwrap());
+        self.write_u8(value.unwrap_or_default());
         Ok(())
     }
 
@@ -220,7 +219,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_u16(value.unwrap());
+        self.write_u16(value.unwrap_or_default());
         Ok(())
     }
 
@@ -229,7 +228,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_u32(value.unwrap());
+        self.write_u32(value.unwrap_or_default());
         Ok(())
     }
 
@@ -238,7 +237,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_u64(value.unwrap());
+        self.write_u64(value.unwrap_or_default());
         Ok(())
     }
 
@@ -247,7 +246,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_f32(value.unwrap());
+        self.write_f32(value.unwrap_or_default());
         Ok(())
     }
 
@@ -256,16 +255,16 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_f64(value.unwrap());
+        self.write_f64(value.unwrap_or_default());
         Ok(())
     }
 
-    fn write_nullable_string(&mut self, value: Option<&str>) -> Result {
+    fn write_nullable_string(&mut self, value: Option<String>) -> Result {
         if value.is_none() {
             self.write_nil();
             return Ok(());
         }
-        self.write_string(value.unwrap());
+        self.write_string(value.unwrap_or_default());
         Ok(())
     }
 
@@ -274,7 +273,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        let _ = self.write_bytes(&value.unwrap());
+        let _ = self.write_bytes(&value.unwrap_or_default());
         Ok(())
     }
 
@@ -283,7 +282,7 @@ impl Write for WriteSizer {
             self.write_nil();
             return Ok(());
         }
-        self.write_bigint(value.unwrap());
+        self.write_bigint(value.unwrap_or_default());
         Ok(())
     }
 

@@ -42,7 +42,7 @@ impl Context {
                 "Null pointer exception: tried to pop an item from an empty Context stack",
             ));
         }
-        let node = self.nodes.pop().unwrap();
+        let node = self.nodes.pop().unwrap_or_default();
         Ok(format!(
             "{} : {} >> {}",
             node.node_item, node.node_type, node.node_info
@@ -88,7 +88,7 @@ impl Context {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Node {
     node_item: String,
     node_type: String,

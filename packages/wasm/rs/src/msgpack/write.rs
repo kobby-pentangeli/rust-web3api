@@ -17,9 +17,9 @@ pub trait Write {
     fn write_f32(&mut self, value: f32);
     fn write_f64(&mut self, value: f64);
     fn write_string_length(&mut self, length: u32);
-    fn write_string(&mut self, value: &str);
+    fn write_string(&mut self, value: String);
     fn write_bytes_length(&mut self, length: u32);
-    fn write_bytes(&mut self, value: &[u8]) -> Result;
+    fn write_bytes(&mut self, buf: &[u8]) -> Result;
     fn write_bigint(&mut self, value: BigInt);
     fn write_array_length(&mut self, length: u32);
     fn write_array<T, F>(&mut self, a: &[T], func: F)
@@ -41,8 +41,8 @@ pub trait Write {
     fn write_nullable_u64(&mut self, value: Option<u64>) -> Result;
     fn write_nullable_f32(&mut self, value: Option<f32>) -> Result;
     fn write_nullable_f64(&mut self, value: Option<f64>) -> Result;
-    fn write_nullable_string(&mut self, value: Option<&str>) -> Result;
-    fn write_nullable_bytes(&mut self, value: Option<Vec<u8>>) -> Result;
+    fn write_nullable_string(&mut self, value: Option<String>) -> Result;
+    fn write_nullable_bytes(&mut self, buf: Option<Vec<u8>>) -> Result;
     fn write_nullable_bigint(&mut self, value: Option<BigInt>) -> Result;
     fn write_nullable_array<T, F>(&mut self, a: Option<Vec<T>>, func: F) -> Result
     where
